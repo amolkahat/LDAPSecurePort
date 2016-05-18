@@ -14,6 +14,10 @@ __EOF__
     exit 1
 fi
 
+ldapport=389
+ldapsport=636
+lpass="Secret123"
+
 while true
 do
     case "$1" in 
@@ -23,9 +27,6 @@ do
                 secdir="$1"
                 echo "Using $1 as sec directory"
                 assecdir=$secdir/
-            else
-                secdir=/etc/dirsrv/slapd-localhost
-                assecdir=/etc/dirsrv/
             fi
         ;;
 
@@ -33,16 +34,12 @@ do
             shift
             if [ "$1" ] ; then
                 ldapport=$1
-            else
-                ldapport=389
             fi
         ;;
         -t )
             shift
             if [ "$1" ] ; then
                 ldapsport=$1
-            else
-                ldapsport=636
             fi
         ;;
 
@@ -50,8 +47,6 @@ do
             shift
             if [ "$1" ] ; then
                 lpass=$1
-            else
-                lpass="Secret123"
             fi
         ;;
 
