@@ -13,7 +13,6 @@ if [ $# -lt 2 ] ; then
 __EOF__
     exit 1
 fi
-
 ldapport=389
 ldapsport=636
 lpass="Secret123"
@@ -153,6 +152,9 @@ if test -n "$isroot" ; then
 fi
 chmod 600 $secdir/${prefix}key3.db $secdir/${prefix}cert8.db
 
+CAserialNo=1000
+ServerCertSerialNo=1001
+ServerAdminServerCertNo=1002
 
 if test -n "$needCA" ; then
 # 5. Generate the encryption key:
@@ -160,9 +162,14 @@ if test -n "$needCA" ; then
     certutil -G $prefixarg -d $secdir -z $secdir/noise.txt -f $secdir/pwdfile.txt
 # 6. Generate the self-signed certificate:
     echo "Creating self-signed CA certificate"
+    echo "CA Certificate Serial No [1000] :"
+    read certNo
+    if [ ! -z $certNo -a $certNo!="" ]; then
+	   CAserialNo=$certNo
+    fi
 # note - the basic constraints flag (-2) is required to generate a real CA cert
 # it asks 3 questions that cannot be supplied on the command line
-    ( echo y ; echo ; echo y ) | certutil -S $prefixarg -n "CA certificate" -s "cn=CAcert" -x -t "CT,," -m 1000 -v 120 -d $secdir -z $secdir/noise.txt -f $secdir/pwdfile.txt -2
+    ( echo y ; echo ; echo y ) | certutil -S $prefixarg -n "CA certificate" -s "cn=CAcert" -x -t "CT,," -m $CAserialNo -v 120 -d $secdir -z $secdir/noise.txt -f $secdir/pwdfile.txt -2
 # export the CA cert for use with other apps
     echo Exporting the CA certificate to cacert.asc
     certutil -L $prefixarg -d $secdir -n "CA certificate" -a > $secdir/cacert.asc
@@ -179,13 +186,24 @@ if test -n "$needServerCert" ; then
     echo Using fully qualified hostname $myhost for the server name in the server cert subject DN
     echo Note: If you do not want to use this hostname, edit this script to change myhost to the
     echo real hostname you want to use
-    certutil -S $prefixarg -n "Server-Cert" -s "cn=$myhost,ou=389 Directory Server" -c "CA certificate" -t "u,u,u" -m 1001 -v 120 -d $secdir -z $secdir/noise.txt -f $secdir/pwdfile.txt
+    echo "Server-Cert Certificate Serial No [1001]:"
+    read serverCert
+    if [ ! -z $serverCert -a $serverCert!="" ]; then
+	    ServerCertSerialNo=$serverCert
+    fi
+    certutil -S $prefixarg -n "Server-Cert" -s "cn=$myhost,ou=389 Directory Server" -c "CA certificate" -t "u,u,u" -m $ServerCertSerialNo -v 120 -d $secdir -z $secdir/noise.txt -f $secdir/pwdfile.txt
 fi
 
 if test -n "$needASCert" ; then
 # Generate the admin server certificate
     echo Creating the admin server certificate
-    certutil -S $prefixarg -n "server-cert" -s "cn=$myhost,ou=389 Administration Server" -c "CA certificate" -t "u,u,u" -m 1002 -v 120 -d $secdir -z $secdir/noise.txt -f $secdir/pwdfile.txt
+    echo "Admin Server Certificate Serial No [1002]:"
+    read admincert
+
+    if [ ! -z $admincert -a $admincert!="" ]; then
+	    ServerAdminServerCertNo=$admincert
+    fi
+    certutil -S $prefixarg -n "server-cert" -s "cn=$myhost,ou=389 Administration Server" -c "CA certificate" -t "u,u,u" -m $ServerAdminServerCertNo -v 120 -d $secdir -z $secdir/noise.txt -f $secdir/pwdfile.txt
 
 # export the admin server certificate/private key for import into its key/cert db
     echo Exporting the admin server certificate pk12 file
